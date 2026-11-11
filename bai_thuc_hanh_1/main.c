@@ -2,6 +2,7 @@
 #include<string>
 #include<iomanip>
 #include<algorithm>
+#include<cctype>
 using namespace std;
 class Xe{
 	private:
@@ -17,10 +18,11 @@ class Xe{
 		};
 		Xe(int ma, const string& loai, int gio, int thoiLuong){
 			maXe = ma;
-			loaiXe = loai;
+			loaiXe = chuanHoaLoaiXe(loai);
 			gioVao = gio;
 			thoiGianDo = thoiLuong;
 			dangChiemCho = true;
+			phiDoXe = 0.0;
 		}
 		int layMaXe() const{return maXe;}
 		string layLoaiXe() const{return loaiXe;}
@@ -90,12 +92,12 @@ class Xe{
 				tongTien=gioDau*(donGia*0.95);
 			}
 			if(thoiGianDo>=3){
-				tongTien=(thoiGianDo-2)*(donGia*0.90);
+				tongTien+=(thoiGianDo-2)*(donGia*0.90);
 			}
 			phiDoXe = tongTien;
 		}
 		void hienThi() const {
-			cout<<"-Xe "<<maXe<<"["<<loaiXe<<"] vao "<<gioVao<<"h "<<"do duoc "<<thoiGianDo<<" h."<<" Phi do xe: "<<tinhPhiDoXe<<"\n";
+			cout<<"-Xe "<<maXe<<"["<<loaiXe<<"] vao "<<gioVao<<"h "<<"do duoc "<<thoiGianDo<<" h."<<" Phi do xe: "<<phiDoXe<<"\n";
 		}
 };
 
@@ -104,10 +106,10 @@ class bai_xe{
 		int ma_bai;
 		char kich_thuoc;
 		Xe pt1, pt2, pt3;
-		cool co1, co2, co3;
+		bool co1, co2, co3;
 	public:
 		bai_xe(){
-			ma_bai=0; kich_thuoc=' '; co1=false; co2=false; co3=false;
+			ma_bai=0; kich_thuoc=' ', co1=false, co2=false, co3=false;
 		}
 		bai_xe(int ma, char kt){
 			ma_bai = ma; kich_thuoc = kt; co1=false; co2=false; co3=false;
@@ -121,7 +123,7 @@ class bai_xe{
 		bool co_loai(string loai, int& dem,double& tong) const;
 };
 bool bai_xe::them(Xe v){
-	int cap = (kich_thuoc == 'S')?1:(kich_thuoc == 'M')?2:3
+	int cap = (kich_thuoc == 'S')?1:(kich_thuoc == 'M')?2:3;
 	if(cap>=1&&!co1){
 		pt1 =v; co1=true; return true;
 	}
@@ -170,7 +172,7 @@ bool bai_xe::chua(int ma_xe) const{
 	if(co3&&pt3.layMaXe() == ma_xe) return true;
 	return false;
 }
-voi bai_xe::hienThi() const {
+void bai_xe::hienThi() const {
 	int cap = (kich_thuoc == 'S')?1:(kich_thuoc == 'M')?2:3;
 	int so_xe = co1+co2+co3;
 	cout<<"Bai "<<ma_bai<<" ["<<kich_thuoc<<"] "<<so_xe<<"/"<<cap<<"xe\n";
@@ -182,13 +184,13 @@ bool bai_xe::co_loai(string loai, int& dem,double& tong) const {
 	dem = 0; tong = 0;
 	string loai_chuan = Xe::chuanHoaLoaiXe(loai);
 	if(co1&&pt1.layLoaiXe() == loai_chuan){
-		++dem; tong += pt1.tinhPhiDoXe();
+		++dem; tong += pt1.layPhiDoXe();
 	}
 	if(co2&&pt2.layLoaiXe() == loai_chuan){
-		++dem; tong += pt2.tinhPhiDoXe();
+		++dem; tong += pt2.layPhiDoXe();
 	}
 	if(co3&&pt3.layLoaiXe() == loai_chuan){
-		++dem; tong += pt3.tinhPhiDoXe();
+		++dem; tong += pt3.layPhiDoXe();
 	}
 	return dem > 0;
 }
@@ -198,13 +200,13 @@ class SystemInterface{
 		bool co1, co2, co3;
 	public:
 		SystemInterface(){
-			co1=false, co2=false, co3=false
+			co1=false, co2=false, co3=false;
 		}
 	void runMenu();
 };
 void SystemInterface::runMenu(){
 	int chon;
-	white(true){
+	while(true){
 		cout<<"\n===== QUAN LY BAI DO XE =====\n";
 		cout<<"1. Tao bai do\n";
 		cout<<"2. Them xe\n";
@@ -214,18 +216,29 @@ void SystemInterface::runMenu(){
 		cout<<"6. Hien thi xe theo bai\n";
 		cout<<"7. Liet ke xe theo loai\n";
 		cout<<"8. Bao cao phi trung binh\n";
-		cout<<"9. Thoat\n"
-		cout<<"chon: ";
+		cout<<"9. Thoat\n";
+		cout<<"Chon: ";
 		cin>>chon;
 		switch(chon){
-			case 1:
+			case 1:{
 				if(co1&&co2&&co3){
 				cout<<"Da dat gioi han 3 bai do\n";
 				continue;
 				}
-				int ma; char kt
+				int ma; char kt;
 				cout<<"Nhap ma bai do: "; cin>>ma;
+				if((co1 && bai1.lay_ma() == ma) ||
+                   (co2 && bai2.lay_ma() == ma) ||
+                   (co3 && bai3.lay_ma() == ma)){
+                    cout<<"Ma bai do da ton tai\n";
+                    break;
+                }
 				cout<<"Nhap kich thuoc(S/M/L): "; cin>>kt;
+				kt = toupper(kt);
+                if(kt!='S' && kt!='M' && kt!='L'){
+                    cout<<"Kich thuoc bai khong hop le\n";
+                    break;
+                }
 				if(!co1){
 				bai1 = bai_xe(ma, kt); co1 = true;
 				}
@@ -236,22 +249,38 @@ void SystemInterface::runMenu(){
 				bai3 = bai_xe(ma, kt); co3 = true;
 				}
 				cout<<"Tao bai do thanh cong\n";
-				break;
-			case 2:
-		        int ma, gio, tg; string loai;
+				break;}
+			case 2:{
+		        int ma, gio, tg;
+		        string loai;
 					cout<<"Nhap ma xe: "; cin>>ma;
+					if((co1 && bai1.chua(ma)) ||
+                       (co2 && bai2.chua(ma)) ||
+                       (co3 && bai3.chua(ma))){
+                        cout<<"Ma xe da ton tai\n";
+                        break;
+                    }
 					cout<<"Nhap loai xe: "; cin>>loai;
 					cout<<"Nhap gio vao: "; cin>>gio;
+					if(gio < 0 || gio > 23 || tg <= 0){
+                        cout<<"Gio vao hoac thoi gian do khong hop le\n";
+                        break;
+                    }
 					cout<<"Nhap thoi gian do: "	; cin>>tg;
 					Xe v(ma, loai, gio, tg);
+                    if(!Xe::laLoaiXeHopLe(loai)){
+                        cout<<"Loai xe khong hop le\n";
+                        break;
+                    }
+                    v.tinhPhiDoXe();
 					bool da_them = false;
 					if(co1&& bai1.them(v)) da_them = true;
 					else if(co2&& bai2.them(v)) da_them = true;
 					else if(co3&& bai3.them(v)) da_them = true;
 					if(da_them) cout<<"Them xe thanh cong\n";
 					else cout<<"Khong the them xe(bai day hoac khong co bai)\n";
-				break;
-			case 3:
+				break;}
+			case 3:{
 				int ma;
 				cout<<"Nhap ma bai do can xoa: ";cin>>ma;
 				if(co1&& bai1.lay_ma()==ma){
@@ -267,8 +296,8 @@ void SystemInterface::runMenu(){
 					cout<<"Da xoa bai do\n";
 				}
 				else cout<<"Khong tim thay bai do\n";
-				break;
-			case 4:
+				break;}
+			case 4:{
 				int ma;
 				cout<<"Nhap ma xe can lay ra: "; cin>>ma;
 				bool da_xoa = false;
@@ -277,7 +306,7 @@ void SystemInterface::runMenu(){
 				else if(co3&& bai3.xoa(ma)) da_xoa  = true;
 				if(da_xoa) cout<<"Da lay xe ra khoi bai\n";
 				else cout<<"Khong tim thay ma xe\n";
-				break;
+				break;}
 			case 5:
 				cout<<"\n---DANH SACH BAI DO---\n";
 				if(co1) bai1.hienThi();
@@ -285,7 +314,7 @@ void SystemInterface::runMenu(){
 				if(co3) bai3.hienThi();
 				if(!co1&&!co2&&!co3) cout<<"Chua co bai do nao\n";
 				break;
-			case 6:
+			case 6:{
 				int ma;
 				cout<<"Nhap ma bai do: "; cin>>ma;
 				if(co1&& bai1.lay_ma()==ma){
@@ -298,10 +327,14 @@ void SystemInterface::runMenu(){
 					bai3.hienThi();
 				}
 				else cout<<"Khong tim thay bai do\n";
-				break;
-			case 7:
+				break;}
+			case 7:{
 				string loai;
 				cout<<"Nhap loai xe: "; cin>>loai;
+				if(!Xe::laLoaiXeHopLe(loai)){
+                    cout<<"Loai xe khong hop le\n";
+                    break;
+                }
 				int dem = 0;
 				double phi = 0;
 				int d;
@@ -319,7 +352,8 @@ void SystemInterface::runMenu(){
 					phi += t;
 				}
 				cout<<"Tim thay "<<dem<<" xe loai "<<loai<<"\n";
-			case 8:
+				break;}
+			case 8:{
 				string ds_loai[3] = {"Car", "Motorcycle", "Bicycle"};
 				for(int i=0; i<3; i++){
 					int dem = 0;
@@ -341,12 +375,14 @@ void SystemInterface::runMenu(){
 					cout<<"loai "<<ds_loai[i]<<": ";
 					if(dem > 0) cout<<"Trung binh phi = $"<<fixed<<setprecision(2)<<(phi/dem)<<"\n";
 					else cout<<"Khong co xe trong he thong\n";
+					}break;
 				}
 			case 9:
-				cout<<"Thoat chuong trinh\n"
-				break;
+				cout<<"Thoat chuong trinh\n";
+				return;
 			default:
 				cout<<"Lua chon khong hop le";
+				break;
 		}
 	}
 }
